@@ -2,20 +2,83 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	pb "github.com/yeongcheon/pero-chat/gen/go"
 	"google.golang.org/grpc"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 )
 
 const (
-	serverAddr = "localhost:9999"
+	serverAddr      = "localhost:9999"
+	firebaseAuthURL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=%s"
 )
 
+type FirebaseAuthRequestBody struct {
+	Email             string `json:"email"`
+	Password          string `json:"password"`
+	ReturnSecureToken bool   `json:"returnSecureToken"`
+}
+
+type FirebaseAuthResponse struct {
+	IdToken      string
+	Email        string
+	RefreshToken string
+	ExpiresIn    string
+	LocalId      string
+	Registered   bool
+}
+
+func firebaseAuth() *FirebaseAuthResponse {
+	reader := bufio.NewReader(os.Stdout)
+	fmt.Print("Enter firebase email : ")
+	email, _ := reader.ReadString('\n')
+	email = strings.TrimSuffix(email, "\n")
+
+	fmt.Print("Enter password : ")
+	password, _ := reader.ReadString('\n')
+	password = strings.TrimSuffix(password, "\n")
+
+	authURL := fmt.Sprintf(firebaseAuthURL, "INSERT_API_KEY")
+	reqBody := FirebaseAuthRequestBody{
+		Email:             email,
+		Password:          password,
+		ReturnSecureToken: false,
+	}
+
+	reqBytes, _ := json.Marshal(reqBody)
+	buff := bytes.NewBuffer(reqBytes)
+
+	resp, err := http.Post(authURL, "application/json", buff)
+	if err != nil {
+		log.Fatalf("firebase auth fail: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := ioutil.ReadAll(resp.Body)
+		fmt.Println(string(b))
+		return nil
+	}
+
+	respBytes, _ := ioutil.ReadAll(resp.Body)
+
+	authResponse := &FirebaseAuthResponse{}
+	json.Unmarshal(respBytes, authResponse)
+
+	return authResponse
+}
+
 func main() {
+	authResponse := firebaseAuth()
+	fmt.Println(authResponse)
+
 	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
