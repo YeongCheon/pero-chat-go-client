@@ -35,6 +35,20 @@ type FirebaseAuthResponse struct {
 	Registered   bool
 }
 
+type PeroRPCCredentials struct {
+	JwtToken string
+}
+
+func (p *PeroRPCCredentials) GetRequestMetadata(ctx context.Context, url ...string) (map[string]string, error) {
+	return map[string]string{
+		"token": p.JwtToken,
+	}, nil
+}
+
+func (p *PeroRPCCredentials) RequireTransportSecurity() bool {
+	return false
+}
+
 func firebaseAuth() *FirebaseAuthResponse {
 	reader := bufio.NewReader(os.Stdout)
 	fmt.Print("Enter firebase email : ")
@@ -79,7 +93,13 @@ func main() {
 	authResponse := firebaseAuth()
 	fmt.Println(authResponse)
 
-	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(serverAddr,
+		grpc.WithInsecure(),
+		grpc.WithPerRPCCredentials(
+			&PeroRPCCredentials{
+				JwtToken: authResponse.IdToken,
+			}),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
