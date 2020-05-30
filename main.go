@@ -18,6 +18,7 @@ import (
 const (
 	serverAddr      = "localhost:9999"
 	firebaseAuthURL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=%s"
+	firebaseApiKey  = "INSERT_API_KEY_HERE"
 )
 
 type FirebaseAuthRequestBody struct {
@@ -59,7 +60,7 @@ func firebaseAuth() *FirebaseAuthResponse {
 	password, _ := reader.ReadString('\n')
 	password = strings.TrimSuffix(password, "\n")
 
-	authURL := fmt.Sprintf(firebaseAuthURL, "INSERT_API_KEY")
+	authURL := fmt.Sprintf(firebaseAuthURL, firebaseApiKey)
 	reqBody := FirebaseAuthRequestBody{
 		Email:             email,
 		Password:          password,
