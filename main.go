@@ -42,7 +42,7 @@ type PeroRPCCredentials struct {
 
 func (p *PeroRPCCredentials) GetRequestMetadata(ctx context.Context, url ...string) (map[string]string, error) {
 	return map[string]string{
-		"token": p.JwtToken,
+		"Authorization": p.JwtToken,
 	}, nil
 }
 
@@ -135,9 +135,10 @@ func main() {
 			if messageErr != nil {
 				log.Printf("%v", messageErr)
 			}
-			fmt.Printf("%s: %s", message.Name, message.Content)
+			if message != nil {
+				fmt.Printf("%s: %s", message.Name, message.Content)
+			}
 		}
-
 	}()
 
 	<-finish
