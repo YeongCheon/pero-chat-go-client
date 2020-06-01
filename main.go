@@ -134,12 +134,12 @@ func main() {
 			message, messageErr := entryClient.Recv()
 			if messageErr != nil {
 				log.Printf("%v", messageErr)
-			}
-			if message != nil {
+			} else {
 				fmt.Printf("%s: %s", message.Name, message.Content)
 			}
 		}
 	}()
 
 	<-finish
+
 }
