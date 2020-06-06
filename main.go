@@ -107,7 +107,7 @@ func main() {
 	defer conn.Close()
 
 	c := pb.NewPlazaClient(conn)
-	entryClient, entryErr := c.Entry(context.Background())
+	entryClient, entryErr := c.Entry(context.Background(), &pb.EntryRequest{})
 	if entryErr != nil {
 		log.Fatal(entryErr)
 	}
@@ -122,8 +122,7 @@ func main() {
 	go func() {
 		for {
 			content, _ := reader.ReadString('\n')
-			entryClient.Send(&pb.Message{
-				Name:    name,
+			c.Broadcast(context.Background(), &pb.ChatMessageRequest{
 				Content: content,
 			})
 		}
