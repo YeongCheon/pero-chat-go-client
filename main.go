@@ -18,7 +18,6 @@ import (
 const (
 	serverAddr      = "localhost:9999"
 	firebaseAuthURL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=%s"
-	firebaseApiKey  = "AIzaSyBeBe_uPrh6O-ynZ83mZBslDxAQz2YBwZs"
 )
 
 type FirebaseAuthRequestBody struct {
@@ -50,7 +49,7 @@ func (p *PeroRPCCredentials) RequireTransportSecurity() bool {
 	return false
 }
 
-func firebaseAuth() *FirebaseAuthResponse {
+func firebaseAuth(firebaseApiKey string) *FirebaseAuthResponse {
 	reader := bufio.NewReader(os.Stdout)
 	fmt.Print("Enter firebase email : ")
 	email, _ := reader.ReadString('\n')
@@ -91,7 +90,15 @@ func firebaseAuth() *FirebaseAuthResponse {
 }
 
 func main() {
-	authResponse := firebaseAuth()
+	b, err := ioutil.ReadFile("./firebase_config.json")
+	if err != nil {
+		log.Fatalf("firebase config file read error: %v", err)
+	}
+
+	firebaseConfig := &FirebaseConfig{}
+	json.Unmarshal(b, firebaseConfig)
+
+	authResponse := firebaseAuth(firebaseConfig.APIKey)
 	fmt.Println(authResponse)
 
 	conn, err := grpc.Dial(serverAddr,
