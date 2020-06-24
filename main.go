@@ -41,7 +41,7 @@ type PeroRPCCredentials struct {
 
 func (p *PeroRPCCredentials) GetRequestMetadata(ctx context.Context, url ...string) (map[string]string, error) {
 	return map[string]string{
-		"Authorization": p.JwtToken,
+		"authorization": p.JwtToken,
 	}, nil
 }
 
@@ -113,12 +113,6 @@ func main() {
 	}
 	defer conn.Close()
 
-	c := pb.NewPlazaClient(conn)
-	entryClient, entryErr := c.Entry(context.Background(), &pb.EntryRequest{})
-	if entryErr != nil {
-		log.Fatal(entryErr)
-	}
-
 	finish := make(chan int)
 
 	reader := bufio.NewReader(os.Stdin)
@@ -126,22 +120,36 @@ func main() {
 	name, _ := reader.ReadString('\n')
 	name = strings.TrimSuffix(name, "\n")
 
-	go func() {
+	fmt.Print("Enter room id :")
+	roomId, _ := reader.ReadString('\n')
+	roomId = strings.TrimSuffix(roomId, "\n")
+
+	c := pb.NewChatServiceClient(conn)
+	entryClient, entryErr := c.Entry(context.Background(), &pb.EntryRequest{
+		RoomId: roomId,
+	})
+	if entryErr != nil {
+		log.Fatal(entryErr)
+	}
+
+	go func(roomId string) {
 		for {
 			content, _ := reader.ReadString('\n')
-			c.Broadcast(context.Background(), &pb.ChatMessageRequest{
-				Content: content,
+			_, resErr := c.Broadcast(context.Background(), &pb.ChatMessageRequest{
+				RoomId:  roomId,
+				Message: content,
 			})
+			if resErr != nil {
+				log.Println(resErr)
+			}
 		}
-	}()
+	}(roomId)
 
 	go func() {
 		for {
 			message, messageErr := entryClient.Recv()
-			if messageErr != nil {
-				log.Printf("%v", messageErr)
-			} else {
-				fmt.Printf("%s: %s", message.Name, message.Content)
+			if messageErr == nil {
+				log.Printf("%s\n", message)
 			}
 		}
 	}()
